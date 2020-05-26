@@ -7,19 +7,15 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.io.ByteArrayOutputStream;
+import java.io.StringBufferInputStream;
 import java.security.SecureRandom;
 
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 
 public class MainActivity extends AppCompatActivity {
@@ -30,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     SecretKeySpec key;
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
@@ -45,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        plaintext = (EditText)findViewById(R.id.plaintext);
-        ciphertext = (EditText)findViewById(R.id.ciphertext);
+        plaintext = findViewById(R.id.plaintext);
+        ciphertext = findViewById(R.id.ciphertext);
 
         byte[] keyBytes = new byte[32];
         SecureRandom random = new SecureRandom();
@@ -54,18 +51,15 @@ public class MainActivity extends AppCompatActivity {
         key = new SecretKeySpec(keyBytes, "AES");
     }
 
-    public void encrypt(View view) throws NoSuchPaddingException, NoSuchAlgorithmException,
-            UnsupportedEncodingException, InvalidAlgorithmParameterException, InvalidKeyException,
-            BadPaddingException, IllegalBlockSizeException {
+    public void encrypt(View view) throws
+            BadPaddingException, IllegalBlockSizeException, ShortBufferException, InvalidCipherTextException {
         String pt = plaintext.getText().toString();
         Log.d("test", pt);
 
-        Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
-        String ivStr = "0123456789abcdef";
-        byte[] iv = ivStr.getBytes("US-ASCII");
-        cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
-
-        byte[] encr = cipher.doFinal(pt.getBytes());
+        AES_BC encrypter = new AES_BC();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        encrypter.encrypt(new StringBufferInputStream(pt), baos);
+        byte[] encr = baos.toByteArray();
 
         ciphertext.setText(bytesToHex(encr), TextView.BufferType.EDITABLE);
     }
